@@ -63,6 +63,22 @@ app.listen(PORT, () => {
   console.log('MongoDB URI:', process.env.MONGODB_URI.replace(/mongodb\+srv:\/\/.*:(.*)@/, 'mongodb+srv://user:****@'));
 });
 
+const url = `https://survey-backend-cwrv.onrender.com/`; // Replace with your Render URL
+const interval = 840000; 
+
+function reloadWebsite() {
+  axios.get(url)
+    .then(response => {
+      console.log(`Reloaded at ${new Date().toISOString()}: Status Code ${response.status}`);
+    })
+    .catch(error => {
+      console.error(`Error reloading at ${new Date().toISOString()}:`, error.message);
+    });
+}
+
+setInterval(reloadWebsite, interval);
+
+
 // Graceful shutdown
 process.on('SIGTERM', () => {
   console.log('SIGTERM signal received: closing HTTP server');
