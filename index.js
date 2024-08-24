@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const axios = require('axios'); // Add this line
 
 const app = express();
 
@@ -14,10 +15,10 @@ mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTop
   .then(() => console.log('Connected to MongoDB'))
   .catch(err => {
     console.error('Could not connect to MongoDB', err);
-    process.exit(1);  // Exit the process if unable to connect to MongoDB
+    process.exit(1);
   });
 
-// Define a schema for our data
+// Define schema and model
 const evaluationSchema = new mongoose.Schema({
   name: String,
   evaluations: [{
@@ -28,10 +29,9 @@ const evaluationSchema = new mongoose.Schema({
     criteriaEvaluations: mongoose.Schema.Types.Mixed
   }]
 });
-
 const Evaluation = mongoose.model('Evaluation', evaluationSchema);
 
-// API endpoint to save evaluation data
+// API endpoints
 app.post('/api/evaluations', async (req, res) => {
   console.log('Received POST request to /api/evaluations');
   console.log('Request body:', JSON.stringify(req.body, null, 2));
@@ -46,7 +46,6 @@ app.post('/api/evaluations', async (req, res) => {
   }
 });
 
-// Basic route for testing
 app.get('/', (req, res) => {
   res.send('Project Evaluation Backend is running');
 });
@@ -58,32 +57,40 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log('MongoDB URI:', process.env.MONGODB_URI.replace(/mongodb\+srv:\/\/.*:(.*)@/, 'mongodb+srv://user:****@'));
+
+  // Start the ping mechanism after the server has started
+  startPingMechanism();
 });
 
-const url = `https://survey-backend-cwrv.onrender.com/`; // Replace with your Render URL
-const interval = 840000; 
+function startPingMechanism() {
+  const url = `https://survey-backend-cwrv.onrender.com/`; // Replace with your Render URL
+  const interval = 840000; // 14 minutes
 
-function reloadWebsite() {
-  axios.get(url)
-    .then(response => {
-      console.log(`Reloaded at ${new Date().toISOString()}: Status Code ${response.status}`);
-    })
-    .catch(error => {
-      console.error(`Error reloading at ${new Date().toISOString()}:`, error.message);
-    });
+  function reloadWebsite() {
+    axios.get(url)
+      .then(response => {
+        console.log(`Pinged at ${new Date().toISOString()}: Status Code ${response.status}`);
+      })
+      .catch(error => {
+        console.error(`Error pinging at ${new Date().toISOString()}:`, error.message);
+      });
+  }
+
+  setInterval(reloadWebsite, interval);
+  console.log('Ping mechanism started');
 }
-
-setInterval(reloadWebsite, interval);
-
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
   console.log('SIGTERM signal received: closing HTTP server');
-  mongoose.connection.close(() => {
-    console.log('MongoDB connection closed');
-    process.exit(0);
+  server.close(() => {
+    console.log('HTTP server closed');
+    mongoose.connection.close(false, () => {
+      console.log('MongoDB connection closed');
+      process.exit(0);
+    });
   });
 });
