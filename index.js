@@ -67,7 +67,7 @@ const server = app.listen(PORT, () => {
 
 function startPingMechanism() {
   const url = `https://survey-backend-cwrv.onrender.com/`; // Replace with your Render URL
-  const interval = 840000; // 14 minutes
+  const interval = 300000; // 14 minutes
 
   function reloadWebsite() {
     axios.get(url)
